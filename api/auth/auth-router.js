@@ -1,8 +1,29 @@
-const router = require('express').Router();
+const router = require('express').Router()
+const bcrypt = require('bcryptjs')
 
-router.post('/register', (req, res) => {
-  res.end('implement register, please!');
-  /*
+const { BCRYPT_ROUNDS } = require('../../config')
+
+const { tokenBuilder } = require('./auth-helpers')
+const { validateUsernameAndPassword, validateUsernameIsUnique } = require('./auth-middleware')
+
+const Users = require('../users/users-model')
+
+// [POST] /api/auth/register
+router.post(
+  '/register',
+  [validateUsernameAndPassword, validateUsernameIsUnique],
+  (req, res, next) => {
+    const user = req.user
+    const hash = bcrypt.hashSync(user.password, BCRYPT_ROUNDS)
+    user.password = hash
+
+    Users.insert(user)
+      .then((saved) => {
+        res.status(201).json(saved)
+      })
+      .catch(next)
+
+    /*
     IMPLEMENT
     You are welcome to build additional middlewares to help with the endpoint's functionality.
     DO NOT EXCEED 2^8 ROUNDS OF HASHING!
@@ -27,10 +48,28 @@ router.post('/register', (req, res) => {
     4- On FAILED registration due to the `username` being taken,
       the response body should include a string exactly as follows: "username taken".
   */
-});
+  }
+)
 
-router.post('/login', (req, res) => {
-  res.end('implement login, please!');
+// [POST] /api/auth/login
+router.post('/login', validateUsernameAndPassword, (req, res, next) => {
+  const { username, password } = req.user
+
+  Users.getBy({ username })
+    .then((user) => {
+      if (user && bcrypt.compareSync(password, user.password)) {
+        const token = tokenBuilder(user)
+
+        return res.status(200).json({
+          message: `welcome, ${user.username}`,
+          token,
+        })
+      }
+
+      next({ status: 401, message: 'invalid credentials' })
+    })
+    .catch(next)
+
   /*
     IMPLEMENT
     You are welcome to build additional middlewares to help with the endpoint's functionality.
@@ -54,6 +93,6 @@ router.post('/login', (req, res) => {
     4- On FAILED login due to `username` not existing in the db, or `password` being incorrect,
       the response body should include a string exactly as follows: "invalid credentials".
   */
-});
+})
 
-module.exports = router;
+module.exports = router
