@@ -67,4 +67,35 @@ describe('users router', () => {
   })
 })
 
-describe('jokes router', () => {})
+describe('jokes router', () => {
+  describe('[GET] /api/jokes', () => {
+    let res
+
+    const jacob = { username: 'jacob', password: '1234' }
+
+    describe('authenticated access', () => {
+      beforeEach(async () => {
+        res = await request(server).post('/api/auth/login').send(jacob)
+        res = await request(server).get('/api/jokes').set('Authorization', res.body.token)
+      })
+
+      it('responds with 200 OK when user is authenticated', () => {
+        expect(res.status).toBe(200)
+      })
+
+      it('responds with a list of dad jokes', () => {
+        expect(res.body).toHaveLength(3)
+      })
+    })
+
+    describe('unauthenticated access', () => {
+      beforeEach(async () => {
+        res = await request(server).get('/api/jokes').set('Authorization', 'foobar')
+      })
+
+      it('responds with 401 unauthorized when user is unauthenticated', () => {
+        expect(res.status).toBe(401)
+      })
+    })
+  })
+})
