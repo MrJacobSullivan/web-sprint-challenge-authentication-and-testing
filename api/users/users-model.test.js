@@ -1,22 +1,13 @@
 const db = require('../../data/dbConfig')
 const Users = require('./users-model')
 
-const bcrypt = require('bcryptjs')
-const { BCRYPT_ROUNDS } = require('../../config')
+const { mockPassword, seedDb } = require('../utils/test-helpers')
 
 beforeEach(async () => {
   await db.migrate.rollback()
   await db.migrate.latest()
 
-  // seed the db with some test users
-  const users = [
-    { username: 'jacob', password: bcrypt.hashSync('1234', BCRYPT_ROUNDS) },
-    { username: 'emma', password: bcrypt.hashSync('hunter2', BCRYPT_ROUNDS) },
-  ]
-
-  users.forEach(async (user) => {
-    await db('users').insert(user)
-  })
+  await seedDb() // seed db with test users
 })
 
 afterAll(async () => {
@@ -46,7 +37,7 @@ describe('users model', () => {
   })
 
   describe('insert', () => {
-    const input = { username: 'larry', password: bcrypt.hashSync('password1', BCRYPT_ROUNDS) }
+    const input = { username: 'larry', password: mockPassword('password1') }
     const expected = { id: 3, username: 'larry' }
 
     it('creates a new user in db', async () => {
