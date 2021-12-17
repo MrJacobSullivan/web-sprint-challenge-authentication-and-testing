@@ -1,5 +1,5 @@
 const Users = require('../users/users-model')
-const { requiredString } = require('../middleware/validation')
+const { requiredString } = require('../utils/validation')
 
 const validateUsernameAndPassword = (req, res, next) => {
   const { username, password } = req.body
